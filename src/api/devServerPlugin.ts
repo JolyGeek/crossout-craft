@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { fetchSnapshot, type MarketSnapshot } from './crossoutcore';
+import { fetchSnapshot, type MarketSnapshot } from './crossoutcore.ts';
 
 /** Отдаёт /api/market в режиме разработки: загружает crossoutcore.ru и кэширует на 5 минут. */
 export function marketApiPlugin(): Plugin {

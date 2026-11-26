@@ -6,7 +6,14 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "allowImportingTsExtensions": true
   },
-  "include": ["vite.config.ts", "src/api/devServerPlugin.ts", "src/api/crossoutcore.ts"]
+  "include": [
+    "vite.config.ts",
+    "src/api/devServerPlugin.ts",
+    "src/api/crossoutcore.ts"
+  ]
 }
