@@ -26,7 +26,7 @@ export default function App() {
         </Routes>
       </main>
       <footer className="footer">
-        Данные рынка: <a href="https://crossoutdb.com" target="_blank" rel="noreferrer">CrossoutDB</a>.
+        Данные рынка: <a href="https://crossoutcore.ru/market/" target="_blank" rel="noreferrer">crossoutcore.ru</a>.
         Неофициальный фанатский сайт, не связан с разработчиками игры.
       </footer>
     </div>

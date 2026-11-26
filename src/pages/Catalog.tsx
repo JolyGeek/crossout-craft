@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchItems, filterItems } from '../api/client';
+import { fetchItems, fetchUpdatedAt, filterItems } from '../api/client';
 import type { Item, ItemFilter } from '../api/types';
 import ItemFilters from '../components/ItemFilters';
 import { coins, int, RARITY_CLASS } from '../lib/format';
@@ -13,6 +13,7 @@ const PAGE = 100;
 
 export default function Catalog() {
   const { data, error, loading } = useAsync(fetchItems, []);
+  const updated = useAsync(fetchUpdatedAt, []);
   const [filter, setFilter] = useState<ItemFilter>({});
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'sellOffers', desc: true });
   const [limit, setLimit] = useState(PAGE);
@@ -49,7 +50,10 @@ export default function Catalog() {
     <section>
       <h1>Каталог предметов</h1>
       <ItemFilters items={data ?? []} value={filter} onChange={(f) => { setFilter(f); setLimit(PAGE); }} />
-      <p className="muted">Найдено: {int(rows.length)}</p>
+      <p className="muted">
+        Найдено: {int(rows.length)}
+        {updated.data && <> · цены обновлены {new Date(updated.data).toLocaleString('ru-RU')}</>}
+      </p>
       <div className="table-wrap">
         <table>
           <thead>

@@ -1,47 +1,52 @@
-import { normalizeHistory, normalizeItems, normalizeRecipe } from './normalize';
-import type { Item, ItemFilter, PricePoint, Recipe } from './types';
+import type { MarketSnapshot } from './crossoutcore';
+import { normalizeHistory, normalizeItem, normalizeItems, normalizeRecipe } from './normalize';
+import type { Item, ItemFilter, PricePoint, Recipe, RecipeNode } from './types';
+
+/*
+ * Источник данных: crossoutcore.ru. Страницу рынка загружает и разбирает
+ * наш сервер (dev-сервер Vite или Cloudflare Worker) и отдаёт по адресу
+ * /api/market компактный снимок: предметы, цены и рецепты.
+ *
+ * В тестовом режиме (VITE_API_MOCK=1) используются выдуманные данные из src/mocks.
+ */
 
 const API_BASE: string = import.meta.env.VITE_API_BASE || '/api';
 const USE_MOCK = import.meta.env.VITE_API_MOCK === '1';
 
-async function getJson(path: string): Promise<unknown> {
-  if (USE_MOCK) return mockGet(path);
-  const res = await fetch(`${API_BASE}${path}`, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Ошибка API ${res.status}`);
-  return res.json();
+export const isMock = USE_MOCK;
+/** История цен есть только в тестовых данных: crossoutcore не отдаёт её в странице рынка. */
+export const hasHistory = USE_MOCK;
+
+let snapshotPromise: Promise<MarketSnapshot> | null = null;
+
+function loadSnapshot(): Promise<MarketSnapshot> {
+  if (!snapshotPromise) {
+    snapshotPromise = fetch(`${API_BASE}/market`, { headers: { Accept: 'application/json' } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Ошибка загрузки данных рынка: ${res.status} ${await res.text()}`);
+        return (await res.json()) as MarketSnapshot;
+      })
+      .catch((e) => {
+        snapshotPromise = null;
+        throw e;
+      });
+  }
+  return snapshotPromise;
 }
 
-async function mockGet(path: string): Promise<unknown> {
-  const m = await import('../mocks/data');
-  const url = new URL(path, 'http://mock');
+async function mocks() {
   await new Promise((r) => setTimeout(r, 150));
-  if (url.pathname === '/items') return m.rawItems;
-  const recipe = url.pathname.match(/^\/recipe(?:-deep)?\/(\d+)$/);
-  if (recipe) {
-    const id = Number(recipe[1]);
-    return m.rawRecipes[id] ?? { recipe: { item: m.rawItems.find((i) => i.id === id), ingredients: [] } };
-  }
-  const hist = url.pathname.match(/^\/market-all\/(\d+)$/);
-  if (hist) return m.rawHistory(Number(hist[1]));
-  throw new Error(`Нет тестовых данных для ${path}`);
-}
-
-// Простой кэш в памяти, чтобы не перезапрашивать список при переходах между страницами.
-const cache = new Map<string, Promise<unknown>>();
-function cached(path: string): Promise<unknown> {
-  let p = cache.get(path);
-  if (!p) {
-    p = getJson(path).catch((e) => {
-      cache.delete(path);
-      throw e;
-    });
-    cache.set(path, p);
-  }
-  return p;
+  return import('../mocks/data');
 }
 
 export async function fetchItems(): Promise<Item[]> {
-  return normalizeItems(await cached('/items'));
+  if (USE_MOCK) return normalizeItems((await mocks()).rawItems);
+  return normalizeItems((await loadSnapshot()).items);
+}
+
+export async function fetchUpdatedAt(): Promise<number | null> {
+  if (USE_MOCK) return null;
+  return (await loadSnapshot()).updatedAt;
 }
 
 export function filterItems(items: Item[], f: ItemFilter): Item[] {
@@ -56,14 +61,39 @@ export function filterItems(items: Item[], f: ItemFilter): Item[] {
   );
 }
 
+/** Собирает полное дерево крафта из рецептов первого уровня. */
+export function buildRecipe(snapshot: MarketSnapshot, id: number): Recipe {
+  const items = new Map(snapshot.items.map((raw) => [Number(raw.id), normalizeItem(raw)]));
+  const unknown = (itemId: number): Item => normalizeItem({ id: itemId, name: `Предмет #${itemId}` });
+
+  const node = (itemId: number, count: number, path: number[]): RecipeNode => {
+    const r = snapshot.recipes[itemId];
+    // Защита от циклов и слишком глубоких деревьев.
+    const canExpand = r && !path.includes(itemId) && path.length < 8;
+    return {
+      item: items.get(itemId) ?? unknown(itemId),
+      count,
+      children: canExpand ? r.ingredients.map((ing) => node(ing.id, ing.amount, [...path, itemId])) : [],
+    };
+  };
+
+  const root = snapshot.recipes[id];
+  return {
+    item: items.get(id) ?? unknown(id),
+    ingredients: root ? root.ingredients.map((ing) => node(ing.id, ing.amount, [id])) : [],
+  };
+}
+
 export async function fetchRecipe(id: number): Promise<Recipe> {
-  return normalizeRecipe(await cached(`/recipe-deep/${id}`));
+  if (USE_MOCK) {
+    const m = await mocks();
+    const raw = m.rawRecipes[id] ?? { recipe: { item: m.rawItems.find((i) => i.id === id), ingredients: [] } };
+    return normalizeRecipe(raw);
+  }
+  return buildRecipe(await loadSnapshot(), id);
 }
 
-export async function fetchHistory(id: number, days = 14): Promise<PricePoint[]> {
-  // Округляем до 10 минут, чтобы ключ кэша не менялся каждую секунду.
-  const start = Math.floor(Date.now() / 600_000) * 600 - days * 86400;
-  return normalizeHistory(await cached(`/market-all/${id}?startTimestamp=${start}`));
+export async function fetchHistory(id: number): Promise<PricePoint[]> {
+  if (USE_MOCK) return normalizeHistory((await mocks()).rawHistory(id));
+  return [];
 }
-
-export const isMock = USE_MOCK;
