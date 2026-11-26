@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:mock": "vite --mode mock",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p worker/tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "worker:dev": "wrangler dev worker/index.ts",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261125.1",
+    "@types/node": "^26.6.11",
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",

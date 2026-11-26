@@ -18,4 +18,11 @@ export const RARITY_CLASS: Record<string, string> = {
   Epic: 'r-epic',
   Legendary: 'r-legendary',
   Relic: 'r-relic',
+  Базовая: 'r-common',
+  Обычная: 'r-common',
+  Редкая: 'r-rare',
+  Особая: 'r-special',
+  Эпическая: 'r-epic',
+  Легендарная: 'r-legendary',
+  Реликтовая: 'r-relic',
 };

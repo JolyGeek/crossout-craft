@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchHistory, fetchRecipe } from '../api/client';
+import { fetchHistory, fetchRecipe, hasHistory } from '../api/client';
 import PriceChart from '../components/PriceChart';
 import { computeCraft, type Choice, type NodeResult } from '../lib/craft';
 import { coins, int, percent, RARITY_CLASS, signed } from '../lib/format';
@@ -116,8 +116,8 @@ function ItemPage({ id }: { id: number }) {
         <p className="muted">Этот предмет не крафтится, его можно только купить.</p>
       )}
 
-      <h2>Цена за 14 дней</h2>
-      {history.loading ? (
+      {hasHistory && <h2>Цена за 14 дней</h2>}
+      {!hasHistory ? null : history.loading ? (
         <p className="muted">Загружаю историю…</p>
       ) : history.error ? (
         <p className="error">История недоступна: {history.error}</p>
