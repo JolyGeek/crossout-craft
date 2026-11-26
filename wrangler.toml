@@ -1,0 +1,8 @@
+name = "crossout-craft-proxy"
+main = "worker/index.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+# Откуда разрешены запросы к прокси. "*" подходит для начала,
+# потом лучше указать адрес сайта, например "https://crossout-craft.pages.dev".
+ALLOWED_ORIGIN = "*"

@@ -1,0 +1,30 @@
+{
+  "name": "crossout-craft",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "vite --mode mock",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "worker:dev": "wrangler dev worker/index.ts",
+    "worker:deploy": "wrangler deploy worker/index.ts"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.4.0",
+    "vitest": "^5.1.2",
+    "wrangler": "^4.168.0"
+  }
+}
